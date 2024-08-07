@@ -2,35 +2,39 @@ import random
 import time
 import networkx as nx
 import matplotlib.pyplot as plt
+from distMat import distancer
 
-def visualize_distance_matrix(distance_matrix):
-    """Visualizes a distance matrix as a graph."""
+pos = 0
+
+def visualize_distance_matrix(distance_matrix, path=None, ax=None):
     G = nx.Graph()
+
     num_nodes = len(distance_matrix)
     for i in range(num_nodes):
         G.add_node(i)
+
     for i in range(num_nodes):
         for j in range(i + 1, num_nodes):
             weight = distance_matrix[i][j]
             G.add_edge(i, j, weight=weight)
-    pos = nx.spring_layout(G)
-    nx.draw_networkx_nodes(G, pos, node_size=100, alpha=0.8)
-    nx.draw_networkx_edges(G, pos, width=1, alpha=0.8, label=True)
-    nx.draw_networkx_labels(G, pos, font_size=8, font_color='black')
+
+    global pos
+    if not(pos):
+        pos = nx.spring_layout(G, scale=4)
+    
+    nx.draw_networkx_nodes(G, pos, node_size=180, alpha=0.8, node_color='yellow', ax=ax)
+    nx.draw_networkx_edges(G, pos, width=1, alpha=0.6, label=True, ax=ax, style='dashed', edge_color='black')
+    nx.draw_networkx_labels(G, pos, font_size=13, font_color='black', ax=ax)
     edge_labels = nx.get_edge_attributes(G, 'weight')
-    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, alpha=0.4)
-    plt.show()
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, alpha=0.9, font_size=10, ax=ax)
+
+    if path is not None:
+        path_edges = [(path[i], path[i + 1]) for i in range(len(path) - 1)]
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, width=2.5, edge_color='green', alpha=0.8, ax=ax)
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, alpha=0.9, font_size=12, ax=ax)
 
 # Distance matrix (TSP dataset)
-distanceMatrix = [
-    [0, 18, 23, 31, 27],
-    [18, 0, 34, 26, 20],
-    [23, 34, 0, 19, 30],
-    [31, 26, 19, 0, 22],
-    [27, 20, 30, 22, 0]
-]
-
-visualize_distance_matrix(distanceMatrix)
+distanceMatrix = distancer()
 
 def calculateCost(solution):
     totalDistance = 0
@@ -78,7 +82,7 @@ def removeBees(bees):
     return (bees, calculateCost(bees))
 
 # Parameters
-numBees = 10
+numBees = len(distanceMatrix)
 workerBees = 5
 iteration = 100
 numFeeds = 5
@@ -124,3 +128,14 @@ best_path = bees[0][0]
 print("Best path: ", best_path)
 print("Best cost: ", bees[0][1])
 print("Algorithm runtime: ", b - a)
+
+fig, axes = plt.subplots(1, 2, figsize=(15, 7))
+
+visualize_distance_matrix(distanceMatrix, ax=axes[0])
+axes[0].set_title('Graph without path')
+
+# Plot with the path
+visualize_distance_matrix(distanceMatrix, path=bees[0][0], ax=axes[1])
+axes[1].set_title('Graph with path')
+
+#plt.show()
